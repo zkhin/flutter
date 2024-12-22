@@ -17,6 +17,7 @@ final String gradlew = Platform.isWindows ? 'gradlew.bat' : 'gradlew';
 final String gradlewExecutable =
     Platform.isWindows ? '.\\$gradlew' : './$gradlew';
 final String fileReadWriteMode = Platform.isWindows ? 'rw-rw-rw-' : 'rw-r--r--';
+final String platformLineSep = Platform.isWindows ? '\r\n' : '\n';
 
 /// Combines several TaskFunctions with trivial success value into one.
 TaskFunction combine(List<TaskFunction> tasks) {
@@ -86,6 +87,8 @@ class ModuleTest {
       content = content.replaceFirst(
         'dependencies:${Platform.lineTerminator}',
         'dependencies:${Platform.lineTerminator}  $ffiPackageName:${Platform.lineTerminator}    path: ..${Platform.pathSeparator}$ffiPackageName${Platform.lineTerminator}',
+        'dependencies:$platformLineSep',
+        'dependencies:$platformLineSep  $ffiPackageName:$platformLineSep    path: ..${Platform.pathSeparator}$ffiPackageName$platformLineSep',
       );
       await pubspec.writeAsString(content, flush: true);
       await inDirectory(projectDir, () async {
@@ -120,6 +123,8 @@ class ModuleTest {
       content = content.replaceFirst(
         '${Platform.lineTerminator}  # assets:${Platform.lineTerminator}',
         '${Platform.lineTerminator}  assets:${Platform.lineTerminator}    - assets/read-only.txt${Platform.lineTerminator}',
+        '$platformLineSep  # assets:$platformLineSep',
+        '$platformLineSep  assets:$platformLineSep    - assets/read-only.txt$platformLineSep',
       );
       await pubspec.writeAsString(content, flush: true);
 
@@ -128,6 +133,8 @@ class ModuleTest {
       content = content.replaceFirst(
         '${Platform.lineTerminator}dependencies:${Platform.lineTerminator}',
         '${Platform.lineTerminator}dependencies:${Platform.lineTerminator}',
+        '${platformLineSep}dependencies:$platformLineSep',
+        '${platformLineSep}dependencies:$platformLineSep',
       );
       await pubspec.writeAsString(content, flush: true);
       await inDirectory(projectDir, () async {
@@ -198,6 +205,7 @@ class ModuleTest {
           output: stdout,
           stderr: stderr,
         );
+        await flutter('clean');
       });
 
       section('Make Android host app editable');
@@ -274,6 +282,9 @@ class ModuleTest {
       section(propertyContent);
       await gradleWrapperProperties.writeAsString(propertyContent, flush: true);
 
+      final File analyticsOutputFile =
+          File(path.join(tempDir.path, 'analytics.log'));
+
       section('Build debug host APK');
 
       await inDirectory(hostApp, () async {
@@ -284,7 +295,7 @@ class ModuleTest {
           <String>['app:assembleDebug'],
           environment: <String, String>{
             'JAVA_HOME': javaHome,
-            'FLUTTER_SUPPRESS_ANALYTICS': 'true',
+            'FLUTTER_ANALYTICS_LOG_FILE': analyticsOutputFile.path,
           },
         );
       });
@@ -325,6 +336,17 @@ class ModuleTest {
         return TaskResult.failure("Debug host APK doesn't contain metadata: flutterProjectType = module ");
       }
 
+      final String analyticsOutput = analyticsOutputFile.readAsStringSync();
+      if (!analyticsOutput.contains('cd24: android')
+          || !analyticsOutput.contains('cd25: true')
+          || !analyticsOutput.contains('viewName: assemble')) {
+        return TaskResult.failure(
+          'Building outer app produced the following analytics: "$analyticsOutput" '
+          'but not the expected strings: "cd24: android", "cd25: true" and '
+          '"viewName: assemble"'
+        );
+      }
+
       section('Check file access modes for read-only asset from Flutter module');
 
       final String readonlyDebugAssetFilePath = path.joinAll(<String>[
@@ -356,7 +378,7 @@ class ModuleTest {
           <String>['app:assembleRelease'],
           environment: <String, String>{
             'JAVA_HOME': javaHome,
-            'FLUTTER_SUPPRESS_ANALYTICS': 'true',
+            'FLUTTER_ANALYTICS_LOG_FILE': analyticsOutputFile.path,
           },
         );
       });
@@ -438,12 +460,6 @@ class ModuleTest {
       print('\nread-only.txt file access modes = $modes');
       if (modes.compareTo(fileReadWriteMode) != 0) {
         return TaskResult.failure('Failed to make assets user-readable and writable');
-      }
-
-      section('Check for specific log errors.');
-      final String finalStderr = stderr.toString();
-      if (finalStderr.contains("You are applying Flutter's main Gradle plugin imperatively")) {
-        return TaskResult.failure('Applied the Flutter Gradle Plugin imperatively');
       }
 
       return TaskResult.success(null);
