@@ -72,10 +72,23 @@ class Form extends StatefulWidget {
     )
     this.onWillPop,
     this.onChanged,
+<<<<<<< stable
     AutoValidateMode? autovalidateMode,
   }) : autovalidateMode = autovalidateMode ?? AutoValidateMode.disabled,
        assert(onPopInvokedWithResult == null || onPopInvoked == null, 'onPopInvoked is deprecated; use onPopInvokedWithResult'),
        assert(((onPopInvokedWithResult ?? onPopInvoked ?? canPop) == null) || onWillPop == null, 'onWillPop is deprecated; use canPop and/or onPopInvokedWithResult.');
+=======
+    AutovalidateMode? autovalidateMode,
+  }) : autovalidateMode = autovalidateMode ?? AutovalidateMode.disabled,
+       assert(
+         onPopInvokedWithResult == null || onPopInvoked == null,
+         'onPopInvoked is deprecated; use onPopInvokedWithResult',
+       ),
+       assert(
+         ((onPopInvokedWithResult ?? onPopInvoked ?? canPop) == null) || onWillPop == null,
+         'onWillPop is deprecated; use canPop and/or onPopInvokedWithResult.',
+       );
+>>>>>>> upstream/feat-39118
 
   /// Returns the [FormState] of the closest [Form] widget which encloses the
   /// given context, or null if none is found.
@@ -239,7 +252,9 @@ class FormState extends State<Form> {
   void _fieldDidChange() {
     widget.onChanged?.call();
 
-    _hasInteractedByUser = _fields.any((FormFieldState<dynamic> field) => field._hasInteractedByUser.value);
+    _hasInteractedByUser = _fields.any(
+      (FormFieldState<dynamic> field) => field._hasInteractedByUser.value,
+    );
     _forceRebuild();
   }
 
@@ -276,21 +291,13 @@ class FormState extends State<Form> {
       return PopScope<Object?>(
         canPop: widget.canPop ?? true,
         onPopInvokedWithResult: widget._callPopInvoked,
-        child: _FormScope(
-          formState: this,
-          generation: _generation,
-          child: widget.child,
-        ),
+        child: _FormScope(formState: this, generation: _generation, child: widget.child),
       );
     }
 
     return WillPopScope(
       onWillPop: widget.onWillPop,
-      child: _FormScope(
-        formState: this,
-        generation: _generation,
-        child: widget.child,
-      ),
+      child: _FormScope(formState: this, generation: _generation, child: widget.child),
     );
   }
 
@@ -372,12 +379,22 @@ class FormState extends State<Form> {
     if (errorMessage.isNotEmpty) {
       final TextDirection directionality = Directionality.of(context);
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        unawaited(Future<void>(() async {
-          await Future<void>.delayed(_kIOSAnnouncementDelayDuration);
-          SemanticsService.announce(errorMessage, directionality, assertiveness: Assertiveness.assertive);
-        }));
+        unawaited(
+          Future<void>(() async {
+            await Future<void>.delayed(_kIOSAnnouncementDelayDuration);
+            SemanticsService.announce(
+              errorMessage,
+              directionality,
+              assertiveness: Assertiveness.assertive,
+            );
+          }),
+        );
       } else {
-        SemanticsService.announce(errorMessage, directionality, assertiveness: Assertiveness.assertive);
+        SemanticsService.announce(
+          errorMessage,
+          directionality,
+          assertiveness: Assertiveness.assertive,
+        );
       }
     }
 
@@ -386,12 +403,9 @@ class FormState extends State<Form> {
 }
 
 class _FormScope extends InheritedWidget {
-  const _FormScope({
-    required super.child,
-    required FormState formState,
-    required int generation,
-  })  : _formState = formState,
-        _generation = generation;
+  const _FormScope({required super.child, required FormState formState, required int generation})
+    : _formState = formState,
+      _generation = generation;
 
   final FormState _formState;
 
@@ -743,8 +757,14 @@ class FormFieldState<T> extends State<FormField<T>> with RestorationMixin {
 
     Form.maybeOf(context)?._register(this);
 
+<<<<<<< stable
     if (Form.maybeOf(context)?.widget.autovalidateMode == AutoValidateMode.onUnfocus && widget.autovalidateMode != AutoValidateMode.always ||
         widget.autovalidateMode == AutoValidateMode.onUnfocus) {
+=======
+    if (Form.maybeOf(context)?.widget.autovalidateMode == AutovalidateMode.onUnfocus &&
+            widget.autovalidateMode != AutovalidateMode.always ||
+        widget.autovalidateMode == AutovalidateMode.onUnfocus) {
+>>>>>>> upstream/feat-39118
       return Focus(
         canRequestFocus: false,
         skipTraversal: true,
